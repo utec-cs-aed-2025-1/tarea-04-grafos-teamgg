@@ -68,6 +68,9 @@ class PathFindingManager {
       if (top.dist > dist[u])
         continue;
 
+      static int steps = 0;
+      steps++;
+
       for (Edge *edge : u->edges) {
         Node *v = (edge->src == u) ? edge->dest : edge->src;
         double weight = edge->length;
@@ -80,10 +83,12 @@ class PathFindingManager {
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Yellow,
                                      2.0f);
-          render(graph);
+          if (steps % 500 == 0)
+            render(graph);
         }
       }
     }
+    render(graph); // Final render to show complete state
 
     set_final_path(parent);
   }
@@ -115,6 +120,9 @@ class PathFindingManager {
       if (top.dist > f_score[u])
         continue;
 
+      static int steps = 0;
+      steps++;
+
       for (Edge *edge : u->edges) {
         Node *v = (edge->src == u) ? edge->dest : edge->src;
         double weight = edge->length;
@@ -129,10 +137,12 @@ class PathFindingManager {
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Magenta,
                                      2.0f);
-          render(graph);
+          if (steps % 500 == 0)
+            render(graph);
         }
       }
     }
+    render(graph); // Final render
 
     set_final_path(parent);
   }
@@ -159,6 +169,9 @@ class PathFindingManager {
       if (u == dest)
         break;
 
+      static int steps = 0;
+      steps++;
+
       for (Edge *edge : u->edges) {
         Node *v = (edge->src == u) ? edge->dest : edge->src;
 
@@ -170,10 +183,12 @@ class PathFindingManager {
 
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Blue, 2.0f);
-          render(graph); // Changed to render(graph)
+          if (steps % 500 == 0)
+            render(graph); // Changed to render(graph)
         }
       }
     }
+    render(graph); // Final render
 
     set_final_path(parent);
   }
