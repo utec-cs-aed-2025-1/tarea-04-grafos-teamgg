@@ -36,6 +36,7 @@ class PathFindingManager {
   WindowManager *window_manager;
   std::vector<sfLine> path;
   std::vector<sfLine> visited_edges;
+  double heuristic_scale = 1.0; // Factor de escala para la heurística
 
   struct Entry {
     Node *node;
@@ -57,6 +58,8 @@ class PathFindingManager {
     std::priority_queue<Entry> pq;
     pq.push({src, 0});
 
+    int steps = 0;
+
     while (!pq.empty()) {
       Entry top = pq.top();
       pq.pop();
@@ -68,7 +71,6 @@ class PathFindingManager {
       if (top.dist > dist[u])
         continue;
 
-      static int steps = 0;
       steps++;
 
       for (Edge *edge : u->edges) {
@@ -83,20 +85,23 @@ class PathFindingManager {
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Yellow,
                                      2.0f);
-          if (steps % 500 == 0)
+          if (steps % 5000 == 0)
             render(graph);
         }
       }
     }
-    render(graph); // Final render to show complete state
 
     set_final_path(parent);
+    visited_edges
+        .clear(); // Limpiar aristas visitadas para mostrar solo el camino
+    render(graph);
   }
 
   void a_star(Graph &graph) {
     std::unordered_map<Node *, Node *> parent;
     std::unordered_map<Node *, double> g_score;
     std::unordered_map<Node *, double> f_score;
+    std::set<Node *> closed_set;
 
     for (auto &[_, node] : graph.nodes) {
       g_score[node] = std::numeric_limits<double>::infinity();
@@ -109,6 +114,8 @@ class PathFindingManager {
     std::priority_queue<Entry> pq;
     pq.push({src, f_score[src]});
 
+    int steps = 0;
+
     while (!pq.empty()) {
       Entry top = pq.top();
       pq.pop();
@@ -117,49 +124,97 @@ class PathFindingManager {
       if (u == dest)
         break;
 
+      // Evitar reprocesar nodos con peor f_score (similar a Dijkstra)
       if (top.dist > f_score[u])
         continue;
 
-      static int steps = 0;
+      // Evitar reprocesar nodos ya cerrados
+      if (closed_set.find(u) != closed_set.end())
+        continue;
+
+      closed_set.insert(u);
       steps++;
 
       for (Edge *edge : u->edges) {
         Node *v = (edge->src == u) ? edge->dest : edge->src;
+
         double weight = edge->length;
         double tentative_g_score = g_score[u] + weight;
 
         if (tentative_g_score < g_score[v]) {
           parent[v] = u;
           g_score[v] = tentative_g_score;
-          f_score[v] = g_score[v] + heuristic(v, dest);
-          pq.push({v, f_score[v]});
+          // f(n) = g(n) + h(n)
+          double new_f_score = g_score[v] + heuristic(v, dest);
+          f_score[v] = new_f_score;
+          pq.push({v, new_f_score});
 
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Magenta,
                                      2.0f);
-          if (steps % 500 == 0)
+          if (steps % 5000 == 0)
             render(graph);
         }
       }
     }
-    render(graph); // Final render
 
     set_final_path(parent);
+    visited_edges
+        .clear(); // Limpiar aristas visitadas para mostrar solo el camino
+    render(graph);
   }
 
   double heuristic(Node *a, Node *b) {
-    return std::sqrt(std::pow(a->coord.x - b->coord.x, 2) +
-                     std::pow(a->coord.y - b->coord.y, 2));
+    // Distancia euclidiana en el espacio de coordenadas (unidades de pantalla)
+    double coord_dist = std::sqrt(std::pow(a->coord.x - b->coord.x, 2) +
+                                  std::pow(a->coord.y - b->coord.y, 2));
+    
+    // Aplicar factor de escala para convertir a las mismas unidades que edge->length
+    return coord_dist * heuristic_scale;
+  }
+
+  // Calcular el factor de escala comparando distancias de coordenadas vs edge lengths
+  void calculate_heuristic_scale(Graph &graph) {
+    if (graph.edges.empty()) {
+      heuristic_scale = 1.0;
+      return;
+    }
+
+    double sum_coord_dist = 0.0;
+    double sum_edge_length = 0.0;
+    int count = 0;
+    int sample_size = std::min(100, (int)graph.edges.size());
+
+    for (int i = 0; i < sample_size; i++) {
+      Edge *edge = graph.edges[i];
+      double coord_dist = std::sqrt(
+          std::pow(edge->src->coord.x - edge->dest->coord.x, 2) +
+          std::pow(edge->src->coord.y - edge->dest->coord.y, 2));
+      
+      if (coord_dist > 0.0) {
+        sum_coord_dist += coord_dist;
+        sum_edge_length += edge->length;
+        count++;
+      }
+    }
+
+    if (count > 0 && sum_coord_dist > 0.0) {
+      // Factor de escala = promedio(edge_length) / promedio(coord_dist)
+      heuristic_scale = sum_edge_length / sum_coord_dist;
+    } else {
+      heuristic_scale = 1.0;
+    }
   }
 
   void bfs(Graph &graph) {
     std::unordered_map<Node *, Node *> parent;
-    // std::unordered_map<Node *, double> visited; // Not used, removed
     std::set<Node *> visited_set;
 
     std::priority_queue<Entry> pq;
     pq.push({src, heuristic(src, dest)});
     visited_set.insert(src);
+
+    int steps = 0;
 
     while (!pq.empty()) {
       Entry top = pq.top();
@@ -169,7 +224,6 @@ class PathFindingManager {
       if (u == dest)
         break;
 
-      static int steps = 0;
       steps++;
 
       for (Edge *edge : u->edges) {
@@ -184,13 +238,15 @@ class PathFindingManager {
           // Visualization
           visited_edges.emplace_back(u->coord, v->coord, sf::Color::Blue, 2.0f);
           if (steps % 500 == 0)
-            render(graph); // Changed to render(graph)
+            render(graph);
         }
       }
     }
-    render(graph); // Final render
 
     set_final_path(parent);
+    visited_edges
+        .clear(); // Limpiar aristas visitadas para mostrar solo el camino
+    render(graph);
   }
 
   //* --- render ---
@@ -249,6 +305,11 @@ public:
     }
 
     reset_path(); // Clear previous path/visited
+
+    // Calcular el factor de escala de la heurística en la primera ejecución
+    if (heuristic_scale == 1.0) {
+      calculate_heuristic_scale(graph);
+    }
 
     if (algorithm == Dijkstra) {
       dijkstra(graph);
