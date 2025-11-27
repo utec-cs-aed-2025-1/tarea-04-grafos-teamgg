@@ -12,9 +12,15 @@ add_executable(${PROJECT_NAME} main.cpp
         path_finding_manager.h
 )
 
-find_package(SFML 2.5 COMPONENTS graphics window REQUIRED)
-if(SFML_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE sfml-graphics sfml-window)
-else()
-    message("SFML not found")
-endif()
+include(FetchContent)
+FetchContent_Declare(
+    sfml
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 2.5.1
+)
+FetchContent_MakeAvailable(sfml)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE sfml-graphics sfml-window sfml-system)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/nodes.csv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/edges.csv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

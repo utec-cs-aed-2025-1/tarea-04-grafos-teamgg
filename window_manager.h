@@ -13,37 +13,23 @@
 // para realizar las manipulaciones de la instancia de manera segura.
 //*
 class WindowManager {
-    sf::RenderWindow window;
+  sf::RenderWindow window;
 
 public:
-    explicit WindowManager(int window_width = 600, int window_height = 800) :
-            window(sf::VideoMode(window_width, window_height), "Lima City Graph") {
-    }
+  explicit WindowManager(int window_width = 600, int window_height = 800)
+      : window(sf::VideoMode(window_width, window_height), "Lima City Graph") {}
 
-    bool is_open() {
-        return window.isOpen();
-    }
+  bool is_open() { return window.isOpen(); }
 
-    void close() {
-        window.close();
-    }
+  void close() { window.close(); }
 
-    bool poll_event(sf::Event &event) {
-        return window.pollEvent(event);
-    }
+  bool poll_event(sf::Event &event) { return window.pollEvent(event); }
 
-    void clear(sf::Color color = sf::Color::Black) {
-        window.clear(color);
-    }
+  void clear(sf::Color color = sf::Color::Black) { window.clear(color); }
 
-    void display() {
-        window.display();
-    }
+  void display() { window.display(); }
 
-    sf::RenderWindow &get_window() {
-        return window;
-    }
+  sf::RenderWindow &get_window() { return window; }
 };
 
-
-#endif //HOMEWORK_GRAPH_WINDOW_MANAGER_H
+#endif // HOMEWORK_GRAPH_WINDOW_MANAGER_H
