@@ -4,7 +4,7 @@
 
 ## Integrantes: 
 - 1 Gian Aedo
-- 2 ____   _____
+- 2 Adrian Montes
 - 3 ____   _____
 
 ## Objetivo: 
